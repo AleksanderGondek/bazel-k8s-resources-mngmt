@@ -1,0 +1,3 @@
+# Store build output within the bound of the repository
+startup --output_base bazel
+
