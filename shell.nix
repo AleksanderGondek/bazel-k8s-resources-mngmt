@@ -22,15 +22,15 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
-    # THIS BREAKS THE HELM RULE 
-    # mkdir -p ./.helm/cache
-    # mkdir -p ./.helm/config
-    # mkdir -p ./.helm/data
-    # mkdir -p ./.helm/repository-cache
-    # export HELM_CACHE_HOME=$(pwd)/.helm/cache
-    # export HELM_CONFIG_HOME=$(pwd)/.helm/config
-    # export HELM_DATA_HOME=$(pwd)/.helm/data
-    # export HELM_REPOSITORY_CACHE=$(pwd)/.helm/repository-cache
+    mkdir -p ./.helm/cache
+    mkdir -p ./.helm/config
+    mkdir -p ./.helm/data
+    mkdir -p ./.helm/repository-cache
+
+    export HELM_CACHE_HOME=$(pwd)/.helm/cache
+    export HELM_CONFIG_HOME=$(pwd)/.helm/config
+    export HELM_DATA_HOME=$(pwd)/.helm/data
+    export HELM_REPOSITORY_CACHE=$(pwd)/.helm/repository-cache
 
     echo 'Bazel k8s resources mngmt dev shell ready - happy hacking!'
   '';

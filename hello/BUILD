@@ -1,4 +1,5 @@
-load("@dataform//tools/helm:helm_template.bzl", "helm_template")
+# load("@dataform//tools/helm:helm_template.bzl", "helm_template")
+load("//tools/helm:helm_template.bzl", "helm_template")
 
 package(default_visibility = ["//visibility:public"])
 
