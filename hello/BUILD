@@ -1,7 +1,9 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@dataform//tools/helm:helm_template.bzl", "helm_template")
 
-cc_binary(
-    name = "hello-world",
-    srcs = ["hello-world.cc"],
+package(default_visibility = ["//visibility:public"])
+
+helm_template(
+    name = "world",
+    chart_tar = "@kubeview//:chart.tgz",
+    namespace = "hello-world",
 )
-
