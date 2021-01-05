@@ -39,11 +39,12 @@ helm_template = rule(
             default = Label("@helm_tool//:helm"),
         ),
         "create_namespace": attr.bool(
-            default=False, 
-            mandatory=False
+            default = False,
+            mandatory = False,
         ),
         "include_crds": attr.bool(
-            default=False,
-            mandatory=False),
+            default = False,
+            mandatory = False,
+        ),
     },
 )
