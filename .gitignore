@@ -4,4 +4,3 @@ bazel-bazel-k8s-resources-mngmt
 bazel-bin
 bazel-out
 bazel-testlogs
-
