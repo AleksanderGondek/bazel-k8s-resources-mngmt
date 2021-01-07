@@ -20,6 +20,7 @@ pkgs.mkShell {
     kubernetes-helm
     kustomize
     nix
+    python3Full
   ];
 
   shellHook = ''
