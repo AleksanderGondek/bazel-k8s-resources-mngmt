@@ -4,3 +4,8 @@ bazel-bazel-k8s-resources-mngmt
 bazel-bin
 bazel-out
 bazel-testlogs
+
+scripts/graph.in
+scripts/graph.png
+scripts/simple_graph.in
+scripts/simple_graph.png

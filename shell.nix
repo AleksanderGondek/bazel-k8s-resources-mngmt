@@ -16,6 +16,7 @@ pkgs.mkShell {
     cacert
     coreutils-full
     gitFull
+    graphviz
     kubectl
     kubernetes-helm
     kustomize
