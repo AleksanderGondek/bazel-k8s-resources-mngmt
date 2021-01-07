@@ -19,6 +19,7 @@ pkgs.mkShell {
     kubectl
     kubernetes-helm
     kustomize
+    nix
   ];
 
   shellHook = ''
