@@ -3,7 +3,7 @@ load("//tools/helm:helm_template.bzl", "helm_template")
 package(default_visibility = ["//visibility:public"])
 
 helm_template(
-    name = "helm_chart",
+    name = "helm-chart",
     chart_tar = "@kubeview//:chart.tgz",
     namespace = "hello-world",
     values = {
@@ -37,7 +37,7 @@ k8s_deploy(
     },
     manifests = [
         ":deployments/dev/kubeview.ns.yaml",
-        ":helm_chart",
+        ":helm-chart",
     ],
 )
 
@@ -49,7 +49,7 @@ k8s_deploy(
     },
     manifests = [
         ":deployments/prod/kubeview.ns.yaml",
-        ":helm_chart",
+        ":helm-chart",
     ],
 )
 
@@ -58,6 +58,7 @@ load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
 k8s_object(
   name = "dev",
   kind = "deployment",
+  cluster = "local",
   template = ":kustomize-dev",
   images = {
     "docker.io/aleksandergondek/kubeview:dev": "@kubeview_image//image"
@@ -69,6 +70,7 @@ load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
 k8s_object(
   name = "prod",
   kind = "deployment",
+  cluster = "local",
   template = ":kustomize-prod",
   images = {
     "docker.io/aleksandergondek/kubeview:dev": "@kubeview_image//image"
