@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>GitOps & K8s</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-slide-number { font-size: 0.5em; }
+      .imperative-declarative-k8s img {
+        width: 90%;
+        height: 90%;
+      }
+      .gitops-cd-pipeline img {
+        width: 65%;
+        height: 65%;
+      }
+      .using-bazel img {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# GitOps & K8s
+<small>Declarative application management on Kubernetes</small> 
+
+---
+.center.imperative-declarative-k8s[![Imperative vs Declarative](img/imperative-declarative-k8s.jpg)]
+<small class="center">
+  <a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/">
+    Docs
+  </a>
+</small>
+
+---
+# What is GitOps?
+
+.gitops-cd-pipeline[![GitOps Pipeline](img/gitops_cd_pipeline.png)]
+
+1. The entire system is described declaratively
+2. The canonical desired system state is versioned in VCS
+3. Approved changes can be automatically applied to the system
+4. Software agents ensure correctness and alert on divergence
+
+Learn more: [Link](https://www.weave.works/technologies/gitops/)
+
+---
+# Why we want to use GitOps approach?
+
+* Faster development
+* System easy to reason about
+* Easy, fast delivery
+* Easier compliance and auditing
+* ..
+* Overall, allows __smaller__ teams, to deliver __better__ products __quicker__
+
+---
+class: center, middle
+
+## Primer
+### Declarative application management
+
+---
+
+# Super simple app example
+
+```yaml
+# less hello-k8s.yaml (1/2)
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-kubernetes
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: hello-kubernetes
+```
+
+---
+# Super simple app example
+
+```yaml
+# less hello-k8s.yaml (2/2)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-kubernetes
+spec:
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: hello-kubernetes
+  template:
+    metadata:
+      labels:
+        app: hello-kubernetes
+    spec:
+      containers:
+      - name: hello-kubernetes
+        image: paulbouwer/hello-kubernetes:1.8
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MESSAGE
+          value: I just deployed this on Kubernetes!
+```
+
+---
+
+# Plain text - most basic approach
+
+## Deploying
+
+```bash
+$ kubectl apply -f hello-k8s.yaml
+```
+
+## Updating
+
+```bash
+$ vim deployment.yaml
+$ git commit ..
+$ kubectl apply -f hello-k8s.yaml
+```
+
+---
+
+# Plain text - most basic approach
+
+## Rolling back
+
+```bash
+$ kubectl rollout undo deployment/hello-k8s.yaml
+
+# In case of having version control
+# even better approach:
+
+$ git checkout <previously_working_commit_hash>
+
+$ kubectl apply -f deployment.yaml
+```
+
+## Troubles with trusting rollout
+- History limit may be reached before stabilization
+- Information about history may be corrupted
+- Cluster may fail and wipe history
+- Virtually, any problem with treating k8s as stateful
+
+---
+
+# Plain text - most basic approach
+_ ~ Assuming having version control ~ _
+
+## Advantages
+
+* Explicit state
+* Easy to reason about
+* Deterministic, predictive behaviour
+* Checks most of GitOps boxes (images are not accounted for)
+
+---
+
+# Plain text - most basic approach
+
+## Disadvantages
+
+* What if ..
+  * There is more than 1 flavour of application setup (i.e. different feature flags)
+  * There is more than 1 deployment environment (i.e. test env uses different external URLs than dev)
+  * There is more than 1 deployment environment flavour (i.e. OpenShift, AKS)
+* Let the copy-pasta ensue - the repository is quickly in terrible state
+* Typo, typo, typo..
+* Using CRDs require some work/scripting
+* Helm? Other tools? Everything has to be incorporated manually (or via scripting -> more messy code)
+---
+
+# Templating - jinja2 and friends
+
+* We are transforming `hello-k8s.yaml` into template (for example: `hello-k8s.j2`)
+```bash
+$ jinja2 -f config.ini hello-k8s.j2 | kubectl apply -f -
+```
+
+* We can even do this per configuration vector and save to versioned files
+```bash
+for filename in ./configs/*.ini; do
+jinja2 -f "${filename}" hello-k8s.j2 > "./deploys/${filename}"
+done
+...
+$ git commit ..
+$ kubectl apply -f ./deploys
+```
+
+---
+
+# Templating - jinja2 and friends
+
+## Advantages
+
+* Retained most of GitOps goodness
+  * Explicit state
+  * Deterministic, predictive behaviour
+  * Checks most of GitOps boxes (images are not accounted for)
+* We can somehow deal with multi-vector configuration
+
+---
+
+# Templating - jinja2 and friends
+
+## Disadvantages
+
+* Not so easy to reason about 
+  * Creeping templating spaghethii, if-else logic etc.
+  * How change in template affects everything else?
+* Typo, typo, typo..
+* Using CRDs require some work/scripting
+* Still know nothing about images
+* Helm? Other tools? Everything has to be incorporated manually (or via scripting -> more messy code)
+
+---
+
+# Helm
+
+This is effectively jinja2 with some built-ins and implicit dependencies.
+
+### 'Recommended workflow'
+```bash
+# Create chart
+$ helm create hellok8s
+# Modify j2 template to fit helm conventions
+$ <Some text editing>
+# Deploy away
+$ helm install hello-k8s hellok8s/ --values hellok8s/values.yaml
+```
+
+### Upgrade / Rollback
+```bash
+$ helm upgrade hello-k8s hellok8s/ --values hellok8s/values.yaml
+
+$ helm rollback hello-k8s n-1
+```
+---
+
+# Helm
+
+## Advantages
+
+* We can somehow deal with multi-vector configuration
+* Easy integration with myriad of production-grade manifests
+* Handles most of use-cases that need minimal scripting (viz. wating for CRDs)
+
+---
+
+# Helm
+
+## Disadvantages
+
+* Not GitOps at all
+* __DEPENDENCY MANAGEMENT HELL__ (stupendously bad)
+  * Leaking dependencies
+  * Dysfunctional lockfiles
+  * Barely working in lax environment
+  * Buggy
+* Implicit, hidden states
+* Not so easy to reason about (templating hell)
+* Typos, typos, typos
+* Still know nothing about images
+
+---
+
+# Templating - helm
+
+### 'Recommended workflow'
+```bash
+# Create chart
+$ helm create hellok8s
+# Modify j2 template to fit helm conventions
+$ <Some text editing>
+# Materialize
+$ helm template hellok8s/ --values hellok8s/values.yaml > deploys/hello-k8s.yaml
+$ kubectl apply -f deploys/hello-k8s.yaml
+```
+
+### Upgrade / Rollback
+```bash
+$ git pull --rebase && kubectl apply -f deploys/hello-k8s.yaml
+$ git checkout <hash> && kubectl apply -f deploys/hello-k8s.yaml
+```
+
+---
+
+# Templating - helm
+
+## Advantages
+
+* Retained most of GitOps goodness
+  * Explicit state
+  * Deterministic, predictive behaviour
+  * Checks most of GitOps boxes (images are not accounted for)
+* We can somehow deal with multi-vector configuration
+* With some scripting can use myriad of production grade manifests
+
+---
+
+# Templating - helm
+
+## Disadvantages
+
+* __DEPENDENCY MANAGEMENT HELL__ (stupendously bad)
+* Not so easy to reason about (templating hell)
+* Typos, typos, typos
+* Using CRDs require some work/scripting
+* Still know nothing about images
+
+---
+
+# Overlays - Kustomize
+
+Build final deployments by stacking "layers" of manifest
+
+```bash
+$ tree
+.
+|-- base                 # Materialized deployment
+|   |-- hello-k8s.yaml
+|   |-- kustomize.yaml
+|-- overlays
+|   |--production        # Only diff of changes
+|       |-- hello-k8s.yaml
+|       |-- kustomize.yaml
+|   |--test              # Only diff of changes
+|     |-- hello-k8s.yaml
+|     |-- kustomize.yaml
+
+$ kubectl apply -k overlays/production # or
+$ kustomize build overlays/production | kubectl apply -f -
+```
+
+### Upgrade / Rollback
+```bash
+$ git pull --rebase && kubectl apply -k overlays/production
+$ git checkout <hash> && kubectl apply -f overlays/production
+```
+
+---
+
+# Overlays - Kustomize
+
+## Advantages
+
+* Explicit state
+* Easy to reason about
+* Deterministic, predictive behaviour
+* We can somehow deal with multi-vector configuration
+* Checks most of GitOps boxes (images are not accounted for)
+
+---
+
+# Overlays - Kustomize
+
+## Disadvantages
+
+* Typo, typo, typo..
+* Using CRDs require some work/scripting
+* Helm? Other tools? Everything has to be incorporated manually (or via scripting -> more messy code)
+* Still know nothing about images
+
+---
+
+# Transformations - DTLs (Jsonnet)
+
+Effectively: template syntax, allowing to code templates which are then materialized.
+One is "coding" and "inherting" configurations.
+
+```jsonnet
+{
+  person1: {
+    name: "Alice",
+    welcome: "Hello " + self.name + "!",
+  },
+  person2: self.person1 { name: "Bob" },
+}
+```
+into
+```yaml
+person1:
+  name: "Alice"
+  welcome: "Hello Alice!"
+person2:
+  name: "Bob"
+  welcome: "Hello Bob!"
+```
+---
+
+# Transformations - DTLs (Jsonnet)
+
+## Advantages
+
+* Retained most of GitOps goodness
+  * Explicit state
+  * Deterministic, predictive behaviour
+  * Checks most of GitOps boxes (images are not accounted for)
+* We easily deal with multi-vector configuration
+
+---
+
+# Transformations - DTLs (Jsonnet)
+
+## Disadvantages
+
+* Typo, typo, typo..
+* Requires a bit of tooling
+* Using CRDs require some work/scripting
+* Helm? Other tools? Everything has to be incorporated manually (or via scripting -> more messy code)
+* Still know nothing about images
+
+---
+
+# Side note: Data constraint languages (cue.lang)
+
+### Advantages 
+* _IMO:_ The best approach, but incredibly effortful
+* They are not turning complete
+* There are focused around dealing with multi-dimensional data
+* Extremely helpful in validation / type / schema checking (sic!)
+
+### Disadvantages
+* Requires a bit of tooling
+* Using CRDs require some work/scripting
+* Helm? Other tools? Everything has to be incorporated manually (or via scripting -> more messy code)
+* Still know nothing about images
+
+---
+
+# Reminder: Image management
+
+In every approach mentioned, container image management was assumed to be already done by some other tool.
+
+Such separation of duties causes a very unnatural rift - entity which should be indivisible unit (manifest & container image), is now decoupled. 
+
+---
+class: center, middle
+
+## Project state
+
+---
+
+## Goals / Target state
+
+* GitOps
+* Each commit is deployable state
+* Each change auto-generates full set of deployments and its dependencies
+* All dependencies should be clearly stated and pinned
+* Each operation should be as portable as possible
+* Understanding how pieces fit together should be easy
+* Ideally, doing deployment should be trivial
+
+---
+
+# Current project state
+
+* Uses overlays approach (via Kustomize)
+* Base manifests are plain `yaml` files
+* Helm charts are materialized via `helm template` command
+* Each commit represents releasable unit
+
+### Issues
+
+* Helm charts are not referenced explicitly (nor values used to create them)
+* Each deployment is not fully materialized (not a plain `yaml` file)
+* There is no clear way to reproduce/re-build (collection of manual operations)
+* Container images are taken for granted
+* Further development will mean more and more glue code
+* ...
+* Even with effort and good coding, result would be a home-made set of instructions, interconnected with bash, which
+may or may not be portable
+* We would be arriving at "works on my machine" city
+
+---
+
+class: center, middle
+
+## "There must be a better way"
+
+.right[<small> - Raymond Hettinger</small>]
+
+---
+
+# Short shilling for Bazel
+
+Another build tool?! Why would I need it?! `#stop-hype-driven-development`
+
+Are these looking a bit familiar?
+
+* "The build process is broken, but I don't know why.."
+* "Why my build is taking literal ages?"
+* "It builds on my machine, CD/CD is failing or vice versa"
+* "I haven't changed a thing and the new build has broken down"
+
+If so, perhaps Bazel may be of help.
+
+* It is a polyglot, highly distributed build and test orchestration tool.
+* It __does not replace__ your build tools - but it __gives them superpowers__!
+
+<small><a href="https://slides.com/wassimchegham/what-is-bazel-build-system-full-introduction#/">Based upon this slides</a></small>
+
+---
+
+# Bazel is
+
+## Incremental
+## Deterministic
+## Hermetic
+## Composable
+## Industrial grade
+
+---
+
+# Argumentum ad populum
+
+.using-bazel[![Using Bazel](img/using-bazel.png)]
+
+---
+
+# Advantages in context of k8s / microservices
+
+* Battle-tested tools for handling containers & manifests
+* Wide variety of approaches
+* Container image management may be part of the solution
+* Every 'build' is a DAG with cachable intermediary steps
+* Nearly each-part of it's implementation is virtually written in Python (Skylark to be precise)
+
+---
+
+class: center, middle
+
+## Demo
+
+---
+
+# Summary
+
+## Creating complete deployment
+```bash
+# Build images, upload them and generate manifests
+$ bazel run kubeview:prod
+```
+
+## Apply deployment
+```
+# (.create, .delete, .replace, .describe also exist)
+$ bazel run kubeview:prod.apply
+```
+
+## Understand what are the dependencies
+```
+$ bazel query --noimplicit_deps 'deps(//kubeview:prod)' --output graph
+```
+
+---
+
+# Summary
+
+### Using Bazel will
+
+* Allow to clearly define and connect various tasks required for apps deployments
+* Encapsulate the logic, so that it can be re-run on different hosts
+* Help in reasoning on different dependencies
+* Increase the development speed and focus (features, not deployment-glue)
+
+---
+
+class: center, middle
+
+## Fin.
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create({
+        highlightLanguage: "bash",
+        highlightStyle: "monokai",
+      });
+    </script>
+  </body>
+</html>
