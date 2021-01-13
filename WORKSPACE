@@ -1,21 +1,17 @@
-workspace(name = "test_test_test_baby")
+workspace(name = "bazel_k8s_resources_mngmt")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Helm templating
 load("//tools/helm:repository_rules.bzl", "helm_chart", "helm_tool")
-
-## Download the 'helm' tool.
-helm_tool(
-    name = "helm_tool",
-)
+helm_tool(name = "helm_tool")
 
 ## Download the 'kubeview' Helm chart.
 helm_chart(
-    name = "kubeview",
-    chartname = "kubeview",
-    repo_url = "https://benc-uk.github.io/kubeview/charts",
-    version = "0.1.17",
+  name = "kubeview",
+  chartname = "kubeview",
+  repo_url = "https://benc-uk.github.io/kubeview/charts",
+  version = "0.1.17",
 )
 
 # GitOps Rules
@@ -29,10 +25,10 @@ helm_chart(
 # 
 # rules_gitops_version = "8d9416a36904c537da550c95dc7211406b431db9"
 # http_archive(
-#     name = "com_adobe_rules_gitops",
-#     sha256 = "25601ed932bab631e7004731cf81a40bd00c9a34b87c7de35f6bc905c37ef30d",
-#     strip_prefix = "rules_gitops-%s" % rules_gitops_version,
-#     urls = ["https://github.com/adobe/rules_gitops/archive/%s.zip" % rules_gitops_version],
+#   name = "com_adobe_rules_gitops",
+#   sha256 = "25601ed932bab631e7004731cf81a40bd00c9a34b87c7de35f6bc905c37ef30d",
+#   strip_prefix = "rules_gitops-%s" % rules_gitops_version,
+#   urls = ["https://github.com/adobe/rules_gitops/archive/%s.zip" % rules_gitops_version],
 # )
 # load("@com_adobe_rules_gitops//gitops:deps.bzl", "rules_gitops_dependencies")
 # rules_gitops_dependencies()
@@ -46,8 +42,8 @@ helm_chart(
 # Rules below are utilizing nix-pkgs based binaries
 # 
 local_repository(
-    name = "com_adobe_rules_gitops",
-    path = "./vendored/github.com/adobe/rules_gitops",
+  name = "com_adobe_rules_gitops",
+  path = "./vendored/github.com/adobe/rules_gitops",
 )
 load("@com_adobe_rules_gitops//gitops:deps.bzl", "rules_gitops_dependencies")
 rules_gitops_dependencies()
@@ -64,9 +60,9 @@ rules_nixpkgs_dependencies()
 
 load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_git_repository")
 nixpkgs_git_repository(
-    name = "nixpkgs",
-    revision = "20.09", # Any tag or commit hash
-    sha256 = "" # optional sha to verify package integrity!
+  name = "nixpkgs",
+  revision = "20.09", # Any tag or commit hash
+  sha256 = "" # optional sha to verify package integrity!
 )
 
 # ### This should be done only for nix-based environments, will fail on vanilla Ubuntu/RHEL/etc.
@@ -76,18 +72,13 @@ nixpkgs_go_configure(repository = "@nixpkgs")
 load("@com_adobe_rules_gitops//gitops:repositories.bzl", "rules_gitops_repositories")
 rules_gitops_repositories()
 
-
 # Container images
 # (Need above golang tweak)
 http_archive(
-    # name = "io_bazel_rules_docker",
-    # sha256 = "1698624e878b0607052ae6131aa216d45ebb63871ec497f26c67455b34119c80",
-    # strip_prefix = "rules_docker-0.15.0",
-    # urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.15.0/rules_docker-v0.15.0.tar.gz"],
-    name = "io_bazel_rules_docker",
-    sha256 = "6287241e033d247e9da5ff705dd6ef526bac39ae82f3d17de1b69f8cb313f9cd",
-    strip_prefix = "rules_docker-0.14.3",
-    urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.14.3/rules_docker-v0.14.3.tar.gz"],
+  name = "io_bazel_rules_docker",
+  sha256 = "6287241e033d247e9da5ff705dd6ef526bac39ae82f3d17de1b69f8cb313f9cd",
+  strip_prefix = "rules_docker-0.14.3",
+  urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.14.3/rules_docker-v0.14.3.tar.gz"],
 )
 
 load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
@@ -97,7 +88,8 @@ load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
 container_deps()
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-# External images to pull
+
+## External images to pull
 container_pull(
   name = "kubeview_image",
   registry = "docker.io",
@@ -108,10 +100,10 @@ container_pull(
 
 # K8s Rules
 http_archive(
-    name = "io_bazel_rules_k8s",
-    strip_prefix = "rules_k8s-0.5",
-    urls = ["https://github.com/bazelbuild/rules_k8s/archive/v0.5.tar.gz"],
-    sha256 = "773aa45f2421a66c8aa651b8cecb8ea51db91799a405bd7b913d77052ac7261a",
+  name = "io_bazel_rules_k8s",
+  strip_prefix = "rules_k8s-0.5",
+  urls = ["https://github.com/bazelbuild/rules_k8s/archive/v0.5.tar.gz"],
+  sha256 = "773aa45f2421a66c8aa651b8cecb8ea51db91799a405bd7b913d77052ac7261a",
 )
 
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
