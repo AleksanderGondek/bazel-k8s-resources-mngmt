@@ -6,14 +6,14 @@ def _has_nix(ctx):
 def _gen_imports_impl(ctx):
   ctx.file("BUILD", "")
   imports_for_nix = """
-    load("@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl", "nixpkgs_go_toolchain")
-    def fix_go():
-      nixpkgs_go_toolchain(repository = "@nixpkgs")
+load("@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl", "nixpkgs_go_configure")
+def nixos_golang_patch():
+  nixpkgs_go_configure(repository = "@nixpkgs")
   """
   imports_for_non_nix = """
-    def fix_go():
-      # if go isn't transitive you'll need to add call to go_register_toolchains here
-      pass
+def nixos_golang_patch():
+  # if go isn't transitive you'll need to add call to go_register_toolchains here
+  pass
   """
 
   if _has_nix(ctx):

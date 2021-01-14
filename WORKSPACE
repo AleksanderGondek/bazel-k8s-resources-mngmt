@@ -19,8 +19,6 @@ helm_chart(
 # By default, they are downloading go/kustomize/etc. binaries from github releases
 # which means, dynamically linked executables, which will fail in nix-shell / nixos environment.
 # 
-# TODO: Patched logic should fallback to defaults on non nixos
-
 # ## To use unpatched/not-vendored version, uncomment the following:
 # 
 # rules_gitops_version = "8d9416a36904c537da550c95dc7211406b431db9"
@@ -48,32 +46,41 @@ local_repository(
 load("@com_adobe_rules_gitops//gitops:deps.bzl", "rules_gitops_dependencies")
 rules_gitops_dependencies()
 
-# ### Enforce nixpkgs-based golang sdk
+
+# Section: If NixOS, do some patching
 rules_io_tweag_nixpkgs_version = "acb9e36f403ec6f38bac81290781cb896f22a85e"
 http_archive(
     name = "io_tweag_rules_nixpkgs",
     strip_prefix = "rules_nixpkgs-%s" % rules_io_tweag_nixpkgs_version,
     urls = [ "https://github.com/tweag/rules_nixpkgs/archive/%s.tar.gz" % rules_io_tweag_nixpkgs_version ],
 )
+
 load("@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl", "rules_nixpkgs_dependencies")
 rules_nixpkgs_dependencies()
 
 load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_git_repository")
 nixpkgs_git_repository(
   name = "nixpkgs",
-  revision = "20.09", # Any tag or commit hash
-  sha256 = "" # optional sha to verify package integrity!
+  revision = "20.09",
 )
 
-# ### This should be done only for nix-based environments, will fail on vanilla Ubuntu/RHEL/etc.
-load("@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl", "nixpkgs_go_configure")
-nixpkgs_go_configure(repository = "@nixpkgs")
+local_repository(
+    name = "golanch_patch",
+    path = "tools/golang_patch",
+)
 
+load("@golanch_patch//:nixos_support.bzl", "gen_imports")
+gen_imports()
+
+load("@nixos_support_golang//:imports.bzl", "nixos_golang_patch")
+nixos_golang_patch()
+
+
+# Load gitops_rules dependencies
 load("@com_adobe_rules_gitops//gitops:repositories.bzl", "rules_gitops_repositories")
 rules_gitops_repositories()
 
-# Container images
-# (Need above golang tweak)
+# Container images (on NixOs need above golang tweak)
 http_archive(
   name = "io_bazel_rules_docker",
   sha256 = "6287241e033d247e9da5ff705dd6ef526bac39ae82f3d17de1b69f8cb313f9cd",
