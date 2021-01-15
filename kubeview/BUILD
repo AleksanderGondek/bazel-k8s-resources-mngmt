@@ -37,6 +37,9 @@ k8s_deploy(
     ":deployments/dev/kubeview.ns.yaml",
     ":helm-chart",
   ],
+  patches = [
+    ":overlays/dev/kubeview.deploy.yaml"
+  ],
   namespace = "kubeview",
 )
 
@@ -48,6 +51,9 @@ k8s_deploy(
   manifests = [
     ":deployments/prod/kubeview.ns.yaml",
     ":helm-chart",
+  ],
+  patches = [
+    ":overlays/prod/kubeview.deploy.yaml"
   ],
   namespace = "prod-kubeview",
 )
