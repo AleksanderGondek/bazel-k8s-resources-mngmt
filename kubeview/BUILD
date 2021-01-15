@@ -8,8 +8,6 @@ package(default_visibility = ["//visibility:public"])
 helm_template(
   name = "helm-chart",
   chart_tar = "@kubeview//:chart.tgz",
-  # Helm doesn't render it anyway :)
-  create_namespace = True,
   include_crds = True,
   namespace = "hello-world",
   values = {

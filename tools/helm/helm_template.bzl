@@ -15,8 +15,6 @@ def helm_template_impl(ctx):
   if ctx.file.values_yaml_file != None:
     inputs += [ctx.file.values_yaml_file]
     helm_cmd = "%s --values %s" % (helm_cmd, ctx.file.values_yaml_file.path)
-  if ctx.attr.create_namespace:
-    helm_cmd = "%s --create-namespace" % (helm_cmd)
   if ctx.attr.include_crds:
     helm_cmd = "%s --include-crds" % (helm_cmd)
 
@@ -44,10 +42,6 @@ helm_template = rule(
       cfg = "host",
       allow_single_file = True,
       default = Label("@helm_tool//:helm"),
-    ),
-    "create_namespace": attr.bool(
-      default = False,
-      mandatory = False,
     ),
     "include_crds": attr.bool(
       default = False,
