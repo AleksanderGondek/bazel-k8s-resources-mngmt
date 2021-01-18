@@ -21,6 +21,14 @@ helm_template(
   },
 )
 
+helm_template(
+  name = "fluxcd",
+  chart_tar = "@center//:chart.tgz",
+  include_crds = True,
+  namespace = "this-is-a-test",
+  values = {},
+)
+
 container_image(
   name = "image",
   base = "@kubeview_image//image",

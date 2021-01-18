@@ -13,6 +13,13 @@ helm_chart(
   repo_url = "https://benc-uk.github.io/kubeview/charts",
   version = "0.1.17",
 )
+# helm install helm-operator center/fluxcd/helm-operator
+helm_chart(
+  name = "center",
+  chartname = "fluxcd/helm-operator",
+  repo_url = "https://repo.chartcenter.io",
+  version = "1.2.0",
+)
 
 # GitOps Rules
 # --
