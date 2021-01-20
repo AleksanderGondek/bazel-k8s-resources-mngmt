@@ -1,7 +1,7 @@
+load("@dataform_co_dataform//tools/helm:helm_template.bzl", "helm_template")
 load("@com_adobe_rules_gitops//gitops:defs.bzl", "k8s_deploy")
-load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("//tools/helm:helm_template.bzl", "helm_template")
+load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
 
 package(default_visibility = ["//visibility:public"])
 

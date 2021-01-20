@@ -1,2 +1,0 @@
-Welcome, {{VAR}}!
-{{imports.IMP}}
