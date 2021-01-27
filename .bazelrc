@@ -1,2 +1,5 @@
 # Store build output within the bound of the repository
 startup --output_base bazel
+build --define k8s_distro=k8s
+run --define k8s_distro=k8s
+test --define k8s_distro=k8s

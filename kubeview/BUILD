@@ -50,6 +50,19 @@ k8s_deploy(
 )
 
 k8s_deploy(
+  name = "test",
+  manifests = select({
+    "//conditions/k8s_distro:k8s": [":deployments/dev/kubeview.ns.yaml"],
+    "//conditions/k8s_distro:aks": [":deployments/prod/kubeview.ns.yaml"],
+    "//conditions/k8s_distro:eks": [":deployments/dev/kubeview.ns.yaml"],
+    "//conditions/k8s_distro:openshift": [":deployments/dev/kubeview.ns.yaml"],
+    "//conditions/k8s_distro:rke-goverment": [":deployments/dev/kubeview.ns.yaml"],
+    "//conditions:default": [":deployments/dev/kubeview.ns.yaml"],
+  }),
+  namespace = "test",
+)
+
+k8s_deploy(
   name = "kustomize-prod",
   common_labels = {
     "app.kubernetes.io/name": "awesome-kubeview-prod",
