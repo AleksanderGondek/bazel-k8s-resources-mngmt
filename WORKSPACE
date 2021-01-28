@@ -10,7 +10,6 @@ git_repository(
   commit="5acd97bde5150ce433869603125fc2a14a2aadb4",
   remote="https://github.com/dataform-co/dataform.git",
 )
-
 load(
   "@dataform_co_dataform//tools/helm:repository_rules.bzl",
   "helm_chart",
@@ -53,7 +52,6 @@ nixpkgs_git_repository(
   name = "nixpkgs",
   revision = "20.09",
 )
-
 local_repository(
     name = "golanch_patch",
     path = "tools/golang_patch",
@@ -65,7 +63,6 @@ gen_imports()
 load("@nixos_support_golang//:imports.bzl", "nixos_golang_patch")
 nixos_golang_patch()
 
-# Load gitops_rules dependencies
 load("@com_adobe_rules_gitops//gitops:repositories.bzl", "rules_gitops_repositories")
 rules_gitops_repositories()
 

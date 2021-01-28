@@ -50,7 +50,7 @@ k8s_deploy(
 )
 
 k8s_deploy(
-  name = "test",
+  name = "select-example",
   manifests = select({
     "//conditions/k8s_distro:k8s": [":deployments/dev/kubeview.ns.yaml"],
     "//conditions/k8s_distro:aks": [":deployments/prod/kubeview.ns.yaml"],
@@ -59,7 +59,7 @@ k8s_deploy(
     "//conditions/k8s_distro:rke-goverment": [":deployments/dev/kubeview.ns.yaml"],
     "//conditions:default": [":deployments/dev/kubeview.ns.yaml"],
   }),
-  namespace = "test",
+  namespace = "example",
 )
 
 k8s_deploy(
