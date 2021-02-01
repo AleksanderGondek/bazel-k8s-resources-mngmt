@@ -1,0 +1,110 @@
+diff --git skylib/kustomize/kustomize.bzl skylib/kustomize/kustomize.bzl
+index 5102984..948dc52 100644
+--- skylib/kustomize/kustomize.bzl
++++ skylib/kustomize/kustomize.bzl
+@@ -13,6 +13,11 @@ load(
+     "@io_bazel_rules_docker//skylib:path.bzl",
+     _get_runfile_path = "runfile",
+ )
++load(
++    "//skylib/kustomize:kustomize_nixos.bzl",
++    "is_running_on_nixos",
++    "copy_kustomize_bin_from_nix_store"
++)
+ load("//skylib:push.bzl", "K8sPushInfo")
+ load("//skylib:stamp.bzl", "stamp")
+ 
+@@ -37,9 +42,11 @@ sh_binary(
+     visibility = ["//visibility:public"],
+ )
+ """)
+-
+-    filename, sha256 = _binaries[platform]
+-    ctx.download_and_extract(filename, "bin/", sha256 = sha256)
++    if is_running_on_nixos(ctx):
++        copy_kustomize_bin_from_nix_store(ctx, path)
++    else:
++        filename, sha256 = _binaries[platform]
++        ctx.download_and_extract(filename, "bin/", sha256 = sha256)
+ 
+ _download_binary = repository_rule(
+     _download_binary_impl,
+@@ -88,7 +95,7 @@ def _is_ignored_src(src):
+     return basename.startswith(".")
+ 
+ _script_template = """\
+-#!/bin/bash
++#!/usr/bin/env bash
+ set -euo pipefail
+ {kustomize} build --load_restrictor none --reorder legacy {kustomize_dir} {template_part} {resolver_part} >{out}
+ """
+diff --git skylib/kustomize/kustomize_nixos.bzl skylib/kustomize/kustomize_nixos.bzl
+new file mode 100644
+index 0000000..45353f1
+--- /dev/null
++++ skylib/kustomize/kustomize_nixos.bzl
+@@ -0,0 +1,64 @@
++def _get_path_to_kustomize_on_nixos(repo_ctx):
++    """Ephemeral download of kustomize binary."""
++    command = "nix-shell --pure -p bash busybox kustomize --run 'which kustomize'"
++    result = repo_ctx.execute([
++        "sh",
++        "-c",
++        command,
++    ],
++    environment = {
++        "NIX_PATH": "nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos"
++    })
++    kustomize_downloaded = result.return_code == 0
++    if not kustomize_downloaded:
++        fail("Failed to run '%s'" % command)
++
++    path_to_kustomize = result.stdout.strip()
++    return path_to_kustomize
++
++def is_running_on_nixos(repo_ctx):
++    """Check if Bazel is executed on NixOS.
++
++    Args:
++        repo_ctx: context of the repository rule,
++            containing helper functions and information about attributes
++
++    Returns:
++        boolean: indicating if Bazel is executed on NixOS.
++    """
++    result = repo_ctx.execute([
++        "sh",
++        "-c",
++        "test -f /etc/os-release && cat /etc/os-release | head -n1",
++    ])
++    os_release_file_read_success = result.return_code == 0
++    if not os_release_file_read_success:
++        return False
++
++    os_release_first_line = result.stdout
++    host_is_nixos = os_release_first_line.strip() == 'NAME=NixOS'
++    return host_is_nixos
++
++def copy_kustomize_bin_from_nix_store(repo_ctx, path):
++    """Copy kustomize binary from nix_store to given path.
++
++    Downloads kustomize binary via nix package manger,
++    then copies the binary to Bazel cache. This operation
++    does not impact host configuration in any way.
++
++    Args:
++        repo_ctx: context of the repository rule,
++            containing helper functions and information about attributes
++        path: path under which the kustomize should be copied
++
++    Returns:
++        None
++    """
++    repo_ctx.file("%s/kustomize" % path)
++    result = repo_ctx.execute([
++        "sh",
++        "-c",
++        "cp -f %s %s/kustomize" % (_get_path_to_kustomize_on_nixos(repo_ctx), path),
++    ])
++    if result.return_code != 0:
++        fail("Failed to copy kustomize bin from nix_store")

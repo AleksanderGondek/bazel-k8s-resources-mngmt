@@ -31,6 +31,7 @@ git_repository(
   shallow_since="1611050644 +0000",
   patches=[
     "//:patches/com_adobe_rules_gitops-add-ability-to-run-in-nixos-environment.patch",
+    "//:patches/com_adobe_rules_gitops-add-ability-to-run-in-nixos-environment-2.patch",
   ]
 )
 load("@com_adobe_rules_gitops//gitops:deps.bzl", "rules_gitops_dependencies")
