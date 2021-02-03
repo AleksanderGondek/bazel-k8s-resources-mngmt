@@ -9,12 +9,14 @@ pkgs.mkShell {
   name = "bazel-k8s-resources-mngmt-dev-shell";
 
   buildInputs = with pkgs; [
+    gnutar
+    coreutils-full
     bash
     busybox
     bazel
     bazel-buildtools
     cacert
-    coreutils-full
+    docker
     gitFull
     graphviz
     kubectl
