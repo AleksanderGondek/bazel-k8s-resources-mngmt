@@ -29,15 +29,6 @@ index 5102984..948dc52 100644
  
  _download_binary = repository_rule(
      _download_binary_impl,
-@@ -88,7 +95,7 @@ def _is_ignored_src(src):
-     return basename.startswith(".")
- 
- _script_template = """\
--#!/bin/bash
-+#!/usr/bin/env bash
- set -euo pipefail
- {kustomize} build --load_restrictor none --reorder legacy {kustomize_dir} {template_part} {resolver_part} >{out}
- """
 diff --git skylib/kustomize/kustomize_nixos.bzl skylib/kustomize/kustomize_nixos.bzl
 new file mode 100644
 index 0000000..45353f1

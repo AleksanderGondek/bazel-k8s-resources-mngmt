@@ -27,11 +27,10 @@ helm_tool(name = "helm_tool")
 #
 git_repository(
   name="com_adobe_rules_gitops",
-  commit="354e7d3341f05e076f286663731f18caf1e62340",
+  commit="94f689221fc69e30ee25ef82c1a43efa793fb463",
   remote="https://github.com/adobe/rules_gitops.git",
-  shallow_since="1607997477 -0800",
+  shallow_since = "1611958260 -0800",
   patches=[
-    "//:patches/com_adobe_rules_gitops-add-ability-to-run-in-nixos-environment.patch",
     "//:patches/com_adobe_rules_gitops-add-ability-to-run-in-nixos-environment-2.patch",
   ]
 )
@@ -71,11 +70,18 @@ rules_gitops_repositories()
 
 
 # Container images (on NixOs need above golang tweak)
+## See: https://github.com/bazelbuild/rules_docker/issues/1687
+http_archive(
+    name = "rules_python",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.1.0/rules_python-0.1.0.tar.gz",
+    sha256 = "b6d46438523a3ec0f3cead544190ee13223a52f6a6765a29eae7b7cc24cc83a0",
+)
+
 http_archive(
   name = "io_bazel_rules_docker",
-  sha256 = "6287241e033d247e9da5ff705dd6ef526bac39ae82f3d17de1b69f8cb313f9cd",
-  strip_prefix = "rules_docker-0.14.3",
-  urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.14.3/rules_docker-v0.14.3.tar.gz"],
+  sha256 = "1698624e878b0607052ae6131aa216d45ebb63871ec497f26c67455b34119c80",
+  strip_prefix = "rules_docker-0.15.0",
+  urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.15.0/rules_docker-v0.15.0.tar.gz"],
 )
 
 load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
@@ -90,9 +96,9 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 # K8s Rules
 http_archive(
   name = "io_bazel_rules_k8s",
-  strip_prefix = "rules_k8s-0.5",
-  urls = ["https://github.com/bazelbuild/rules_k8s/archive/v0.5.tar.gz"],
-  sha256 = "773aa45f2421a66c8aa651b8cecb8ea51db91799a405bd7b913d77052ac7261a",
+  strip_prefix = "rules_k8s-0.6",
+  urls = ["https://github.com/bazelbuild/rules_k8s/archive/v0.6.tar.gz"],
+  sha256 = "51f0977294699cd547e139ceff2396c32588575588678d2054da167691a227ef",
 )
 
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
