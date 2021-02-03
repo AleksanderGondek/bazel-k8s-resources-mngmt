@@ -7,7 +7,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 # Helm templating
 git_repository(
   name="dataform_co_dataform",
-  commit="5acd97bde5150ce433869603125fc2a14a2aadb4",
+  commit="69d94367d3a417de1bc370994c5c2d4a2c810854",
+  shallow_since = "1612343338 +0000",
   remote="https://github.com/dataform-co/dataform.git",
 )
 load(
@@ -28,7 +29,7 @@ git_repository(
   name="com_adobe_rules_gitops",
   commit="354e7d3341f05e076f286663731f18caf1e62340",
   remote="https://github.com/adobe/rules_gitops.git",
-  shallow_since="1611050644 +0000",
+  shallow_since="1607997477 -0800",
   patches=[
     "//:patches/com_adobe_rules_gitops-add-ability-to-run-in-nixos-environment.patch",
     "//:patches/com_adobe_rules_gitops-add-ability-to-run-in-nixos-environment-2.patch",
@@ -41,6 +42,7 @@ rules_gitops_dependencies()
 rules_io_tweag_nixpkgs_version = "acb9e36f403ec6f38bac81290781cb896f22a85e"
 http_archive(
     name = "io_tweag_rules_nixpkgs",
+    sha256 = "52c5ab0b68841b96463e1bd44760ef2bbbffa0804873496b6e0f982f5b3176f6",
     strip_prefix = "rules_nixpkgs-%s" % rules_io_tweag_nixpkgs_version,
     urls = [ "https://github.com/tweag/rules_nixpkgs/archive/%s.tar.gz" % rules_io_tweag_nixpkgs_version ],
 )
