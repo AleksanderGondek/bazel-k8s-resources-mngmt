@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: argo-workflows
+  name: workflow-controller-configmap
+data:
+  artifactRepository: |
+    archiveLogs: true
+    s3:
+      bucket: argo-artifacts
+      endpoint: argo-minio:9000
+      insecure: true
+      accessKeySecret:
+        name: argo-custom
+        key: minio-access-key
+      secretKeySecret:
+        name: argo-custom
+        key: minio-secret-key
+  executor: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+  links: |
+    - name: Workflow Link
+      scope: workflow
+      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Pod Link
+      scope: pod
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Pod Logs Link
+      scope: pod-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Event Source Logs Link
+      scope: event-source-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Sensor Logs Link
+      scope: sensor-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+  metricsConfig: |
+    disableLegacy: true
+    enabled: true
+    path: /metrics
+    port: 9090
+  persistence: |
+    connectionPool:
+      maxIdleConns: 100
+      maxOpenConns: 0
+      connMaxLifetime: 0s
+    nodeStatusOffLoad: true
+    archive: true
+    archiveTTL: 7d
+    postgresql:
+      host: argo-postgresql
+      port: 5432
+      database: argo-postgres
+      tableName: argo_workflows
+      userNameSecret:
+        name: argo-custom
+        key: argo-postgres-user
+      passwordSecret:
+        name: argo-custom
+        key: argo-postgres-pass

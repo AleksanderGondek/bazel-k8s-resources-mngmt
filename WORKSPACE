@@ -1,7 +1,14 @@
 workspace(name = "bazel_k8s_resources_mngmt")
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load(
+  "@bazel_tools//tools/build_defs/repo:git.bzl",
+  "git_repository",
+  "new_git_repository"
+)
+load(
+  "@bazel_tools//tools/build_defs/repo:http.bzl",
+  "http_archive"
+)
 
 
 # Bazel rules for materializing helm charts
@@ -102,6 +109,16 @@ load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 k8s_go_deps()
 
 
+# Download Argo repository
+new_git_repository(
+  name="argoproj_argo",
+  commit="5f5150730c644865a5867bf017100732f55811dd",
+  remote="https://github.com/argoproj/argo.git",
+  shallow_since = "1612215927 -0800",
+  build_file_content = "exports_files(['manifests/namespace-install.yaml'])",
+)
+
+
 # Helm charts
 helm_chart(
   name = "kubeview",
@@ -115,6 +132,20 @@ helm_chart(
   chartname = "fluxcd/helm-operator",
   repo_url = "https://repo.chartcenter.io",
   version = "1.2.0",
+)
+
+helm_chart(
+  name = "helm_postgresql",
+  chartname = "postgresql",
+  repo_url = "https://charts.bitnami.com/bitnami",
+  version = "10.2.6",
+)
+
+helm_chart(
+  name = "helm_minio",
+  chartname = "minio",
+  repo_url = "https://charts.bitnami.com/bitnami",
+  version = "6.1.3",
 )
 
 
