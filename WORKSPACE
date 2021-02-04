@@ -155,6 +155,40 @@ container_pull(
   name = "kubeview_image",
   registry = "docker.io",
   repository = "bencuk/kubeview",
-  # 'tag' is also supported, but digest is encouraged for reproducibility.
   digest = "sha256:c7d39e1669991f258bdb32c743548a4a19c6e62d7d78f6a1cece77d0e11e12cc",
+)
+
+container_pull(
+  name = "bitnami_postgresql_image",
+  registry = "docker.io",
+  repository = "bitnami/postgresql",
+  digest = "sha256:1865ce08f82ab14fe779513a94e8877063a44571a4f2308c160f7fccb7fccd90",
+)
+
+container_pull(
+  name = "bitnami_minio_image",
+  registry = "docker.io",
+  repository = "bitnami/minio",
+  digest = "sha256:1987305951a7be62cbfe397493eb4ed931a063e5f703fb244be7232286a5e1b8",
+)
+
+container_pull(
+  name = "bitnami_minio_client_image",
+  registry = "docker.io",
+  repository = "bitnami/minio-client",
+  digest = "sha256:e3b5f12a34b8bfa272bc4af12f338e94658d4ae47b436f222fa08396d7b0352d",
+)
+
+container_pull(
+  name = "argo_cli_image",
+  registry = "docker.io",
+  repository = "argoproj/argocli",
+  digest = "sha256:17d8ded691aac38c8ca5f4d1e030d4411c66fe2a057cfd837ade54b7cd561d0d",
+)
+
+container_pull(
+  name = "argo_workflow_controller_image",
+  registry = "docker.io",
+  repository = "argoproj/workflow-controller",
+  digest = "sha256:f0ec247f3bbe110d8c967f8458a02bc722d7c2094f5eb77eb06b783470357f5d",
 )
