@@ -1,0 +1,82 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ci-example-
+spec:
+  serviceAccountName: "argo"
+  entrypoint: dunnom8t
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.message}} | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/hello_world.txt
+  - name: "dunnom8t"
+    dag:
+      tasks:
+      - name: "clone-repository"
+        template: whalesay
+        arguments:
+          parameters: [{name: "message", value: "clone-repository"}]
+      - name: "lint"
+        dependencies: ["clone-repository"]
+        template: whalesay
+        arguments:
+          parameters: [{name: "message", value: "lint"}]
+      - name: "build-component-a"
+        dependencies: ["lint"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "build-component-a"}]
+      - name: "build-component-b"
+        dependencies: ["lint"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "build-component-b"}]
+      - name: "build-component-c"
+        dependencies: ["lint"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "build-component-c"}]
+      - name: "build-component-d"
+        dependencies: ["lint"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "build-component-d"}]
+      - name: "regenerate-deployment-manifests"
+        dependencies: [
+          "build-component-a",
+          "build-component-b",
+          "build-component-c",
+          "build-component-d"
+        ]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "regenerate-deployment-manifests"}]
+      - name: "setup-infrastructure-for-test-env"
+        dependencies: ["regenerate-deployment-manifests"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "setup-infrastructure-for-test-env"}]
+      - name: "deploy-current-version-to-test-env"
+        dependencies: ["setup-infrastructure-for-test-env"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "deploy-current-version-to-test-env"}]
+      - name: "run-tests-on-test-env"
+        dependencies: ["deploy-current-version-to-test-env"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "run-tests-on-test-env"}]
+      - name: "tear-down-test-env"
+        dependencies: ["run-tests-on-test-env"]
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "tear-down-test-env"}]
