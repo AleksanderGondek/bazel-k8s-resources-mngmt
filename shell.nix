@@ -11,6 +11,7 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     gnutar
     coreutils-full
+    curlFull
     bash
     busybox
     bazel

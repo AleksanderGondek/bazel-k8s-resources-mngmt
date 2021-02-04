@@ -119,6 +119,17 @@ new_git_repository(
 )
 
 
+# Download Argo events repo
+new_git_repository(
+  name="argoproj_argo_events",
+  commit="976f205f1044af9680927e47618cf32b522e15c9",
+  remote="https://github.com/argoproj/argo-events.git",
+  shallow_since = "1611769037 -0800",
+  build_file_content = "exports_files(['manifests/namespace-install.yaml'])",
+)
+
+
+
 # Helm charts
 helm_chart(
   name = "kubeview",
@@ -187,8 +198,50 @@ container_pull(
 )
 
 container_pull(
+  name = "argo_exec_image",
+  registry = "docker.io",
+  repository = "argoproj/argoexec",
+  digest = "sha256:eaa03299021190338e34df4e57c3cc44a3931e66c6429e7c756fe49f6da34660",
+)
+
+container_pull(
   name = "argo_workflow_controller_image",
   registry = "docker.io",
   repository = "argoproj/workflow-controller",
   digest = "sha256:f0ec247f3bbe110d8c967f8458a02bc722d7c2094f5eb77eb06b783470357f5d",
+)
+
+container_pull(
+  name = "argo_sensor_controller_image",
+  registry = "docker.io",
+  repository = "argoproj/sensor-controller",
+  digest = "sha256:f8561298fbf1c20eb4687e3ae35244e18adfc735e18c2f527d85b638f2cbb37b",
+)
+
+container_pull(
+  name = "argo_eventsource_controller_image",
+  registry = "docker.io",
+  repository = "argoproj/eventsource-controller",
+  digest = "sha256:b8e8757c2ae63befbf3b4241454b9e7603a0a359c41fe7885a0b462a4fe06669",
+)
+
+container_pull(
+  name = "argo_eventbus_controller_image",
+  registry = "docker.io",
+  repository = "argoproj/eventbus-controller",
+  digest = "sha256:e52874479ffdda10709406bc541506428fa9b4b9a734615bc45e580e73f76ac0",
+)
+
+container_pull(
+  name = "argo_sensor_image",
+  registry = "docker.io",
+  repository = "argoproj/sensor",
+  digest = "sha256:e027b076ae01890113ea89da88ab93bab44485ff633f6d58f82c93c706f0ac8e",
+)
+
+container_pull(
+  name = "argo_sensor_eventsource_image",
+  registry = "docker.io",
+  repository = "argoproj/eventsource",
+  digest = "sha256:c7bfb84eb5ec380959d0c0e3a9a5ed7387f76232bcf2ff6e165d515698562540",
 )

@@ -82,6 +82,7 @@ k8s_deploy(
     "//argo:argo-postgresql",
     "//argo:argo-minio",
     "@argoproj_argo//:manifests/namespace-install.yaml",
+    "@argoproj_argo_events//:manifests/namespace-install.yaml",
   ],
   patches = [
     "//argo:argo-workflow-controller-configmap.yaml"
@@ -95,7 +96,6 @@ k8s_object(
   cluster = "local",
   template = "//argo:kustomize",
 )
-
 
 k8s_objects(
   name = "deployment",
