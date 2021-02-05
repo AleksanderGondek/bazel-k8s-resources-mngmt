@@ -7,6 +7,7 @@ load("@io_bazel_rules_k8s//k8s:objects.bzl", "k8s_objects")
 exports_files([
   "argo.ns.yaml",
   "argo-custom.secret.yaml",
+  "argo-server.ingress.yaml",
   "argo-workflow-controller-configmap.yaml",
 ])
 
@@ -16,6 +17,17 @@ k8s_object(
   kind = "Namespace",
   cluster = "local",
   template = "//argo:argo.ns.yaml",
+)
+
+k8s_object(
+  name = "ingress",
+  kind = "Ingress",
+  namespace = "argo-workflows",
+  cluster = "local",
+  template = "//argo:argo-server.ingress.yaml",
+  substitutions = {
+    "%{host}": "ci.blackwood",
+  },
 )
 
 k8s_object(
@@ -60,7 +72,7 @@ helm_template(
     "global.storageClass": "hostpath",
     "defaultBuckets": "argo-artifacts",
     "ingress.enabled": "true",
-    "ingress.hostname": "argo.blackwood",
+    "ingress.hostname": "minio.blackwood",
     "image.registry": "docker.io",
     "image.repository": "bitnami/minio",
     "image.tag": "2021.2.1-debian-10-r0",
@@ -103,5 +115,6 @@ k8s_objects(
     "//argo:ns",
     "//argo:argo-custom",
     "//argo:_deployment",
+    "//argo:ingress",
   ],
 )
