@@ -8,7 +8,7 @@ exports_files([
   "argo.ns.yaml",
   "argo-custom.secret.yaml",
   "argo-server.ingress.yaml",
-  "argo-workflow-controller-configmap.yaml",
+  "argo-workflow-controller.cm.yaml",
 ])
 
 
@@ -50,6 +50,7 @@ helm_template(
   include_crds = True,
   namespace = "argo-workflows",
   values = {
+    "fullnameOverride": "argo-postgresql",
     "global.storageClass": "hostpath",
     "psp.create": "true",
     "rbac.create": "true",
@@ -69,6 +70,7 @@ helm_template(
   include_crds = True,
   namespace = "argo-workflows",
   values = {
+    "fullnameOverride": "argo-minio",
     "global.storageClass": "hostpath",
     "defaultBuckets": "argo-artifacts",
     "ingress.enabled": "true",
@@ -97,7 +99,7 @@ k8s_deploy(
     "@argoproj_argo_events//:manifests/namespace-install.yaml",
   ],
   patches = [
-    "//argo:argo-workflow-controller-configmap.yaml"
+    "//argo:argo-workflow-controller.cm.yaml"
   ],
   namespace = "argo-workflows",
 )

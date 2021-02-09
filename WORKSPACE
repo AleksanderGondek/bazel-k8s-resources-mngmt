@@ -184,13 +184,6 @@ container_pull(
 )
 
 container_pull(
-  name = "bitnami_minio_client_image",
-  registry = "docker.io",
-  repository = "bitnami/minio-client",
-  digest = "sha256:e3b5f12a34b8bfa272bc4af12f338e94658d4ae47b436f222fa08396d7b0352d",
-)
-
-container_pull(
   name = "argo_cli_image",
   registry = "docker.io",
   repository = "argoproj/argocli",
