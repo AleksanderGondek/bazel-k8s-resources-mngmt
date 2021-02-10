@@ -1,0 +1,16 @@
+site_name: 'Bazel k8s resources repo'
+site_description: 'Lorem ipsum, ipsum lorem'
+site_url: null
+
+site_author: 'Aleksander Gondek'
+theme: readthedocs
+
+repo_url: 'https://github.com/AleksanderGondek/bazel-k8s-resources-mngmt'
+repo_name: 'GitHub'
+
+docs_dir: 'docs'
+use_directory_urls: false
+
+nav:
+  - Home: 'index.md'
+  - About: 'about.md'
