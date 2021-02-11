@@ -19,7 +19,12 @@ in
 
     buildPhase = ''
       mkdir -p docs
-      find . -maxdepth 1 ! -name docs ! -name . ! -name .. ! -name mkdocs.yml -exec mv -t ./docs {} +
+      find . -maxdepth 1 \
+        ! -name docs \
+        ! -name . \
+        ! -name .. \
+        ! -name mkdocs.yml \
+        -exec mv -t ./docs {} +
       mkdocs build
     '';
 
