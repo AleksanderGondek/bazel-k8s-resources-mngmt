@@ -1,3 +1,5 @@
+""" To be described. """
+
 workspace(name = "bazel_k8s_resources_mngmt")
 
 load(
