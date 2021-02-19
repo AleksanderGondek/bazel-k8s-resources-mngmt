@@ -1,7 +1,27 @@
 """ Ensure golang binaries will work on NixOS. """
 
-def _has_nix(ctx):
-  return ctx.which("nix-build") != None
+def _is_running_on_nixos(repo_ctx):
+  """Check if Bazel is executed on NixOS.
+
+  Args:
+    repo_ctx: context of the repository rule,
+      containing helper functions and information about attributes
+  Returns:
+    boolean: indicating if Bazel is executed on NixOS.
+  """
+  result = repo_ctx.execute([
+    "sh",
+    "-c",
+    "test -f /etc/os-release && cat /etc/os-release | head -n1",
+  ])
+  os_release_file_read_success = result.return_code == 0
+  if not os_release_file_read_success:
+    return False
+
+  os_release_first_line = result.stdout
+  host_is_nixos = os_release_first_line.strip() == "NAME=NixOS"
+  return host_is_nixos
+
 
 def _gen_imports_impl(ctx):
   ctx.file("BUILD", "")
@@ -16,7 +36,7 @@ def nixos_golang_patch():
   pass
   """
 
-  if _has_nix(ctx):
+  if _is_running_on_nixos(ctx):
     ctx.file("imports.bzl", imports_for_nix)
   else:
     ctx.file("imports.bzl", imports_for_non_nix)
