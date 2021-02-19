@@ -2,7 +2,7 @@
 
 def _get_path_to_binary_in_nix_store(repo_ctx, nix_package):
   """Ephemeral download of binary and return of its path."""
-  command = "nix-shell --pure -p bash busybox {} --run 'which {}'".format(nix_package)
+  command = "nix-shell --pure -p bash busybox {0} --run 'which {0}'".format(nix_package)
   result = repo_ctx.execute(
     [
       "sh",
