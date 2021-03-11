@@ -1,0 +1,217 @@
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+
+\edef \writtenAt{\directlua{tex.sprint(os.getenv('CURRENT_DATE'))}}
+
+\input{style/assignment2.cls} % Include LateX Template Assignment2
+
+%----------------------------------------------------------------------------------------
+%	ASSIGNMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Structuring project for k8s deployments}
+\author{Contrasting different approaches\\ \texttt{by Aleksander Gondek}}
+\date{Gdansk, Poland --- \writtenAt}
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section*{Introduction} % Unnumbered section
+
+Within some company, a number of components exist (services, databases, config files, message buses, etc.) which, when put together in certain combination, create a fully functional \emph{deployment}. 
+Many of such deployments exist, some serving as pre-production stages within the organization itself, other as environments dedicated to its customers.
+Prior work has been done, creating some pipeline for building, testing and deploying said components to target deployments - however, it may be disregarded for the purposes of the forthcoming considerations. 
+\newline\newline
+Quite recently, it has been decided to:
+\begin{enumerate}
+	\item Move the existing product(s) onto the \emph{Kubernetes} platforms (AKS, EKS, GKE, OpenShift, on-prem ..)
+	\item Ensure \emph{GitOps} principles are adhered to
+	\item Prepare good base for further development in k8s space
+\end{enumerate}
+
+Many questions arise from those decisions - however, for the current contemplations, those of interest touch the topic of structuring and organizing the development, testing and deployment processes.
+How should said work be organized? Should it follow GitFlow, trunk-based development or something entirely different? Should monorepo be used or should there be many code repositories? How changes will be verified and deployed?
+This paper aims to aid in making such decision.
+
+\begin{warn}[Notice:] % Information block
+	Sadly, in authors opinion, the \emph{GitOps} label starts to be a misnomer, being frequently, incorrectly applied to different practices.
+	For the purposes of this work, reader should assume, that the \emph{GitOps} implies a operating model with following properties: 
+	1) the entire system is described declaratively;
+	2) the canonical desired stated is stored in some version control system;
+	3) approved changes are automatically applied to system;
+	4) software ensures correctness and at least alerts on divergence towards canonical state
+\end{warn}
+
+\section{Modeling}
+
+\subsection{Requirements}
+
+To recapitulate (and futher specify) the goals set by the company:
+\begin{enumerate}
+	\item Each deployment may be \emph{uniquely} modified
+	\item All current and future components should gain the capability of being deployed onto \emph{Kubernetes} platform
+	\item The flavour of \emph{Kubernetes} is not constrained - deployment should be possible on any certified distribution
+	\item The deployment should be possible on pre-provisioned cluster and be capable of creating underlying infrastructure in Cloud, for itself (i.e. setting up AKS)
+	\item It has been suggested that further down the line, on-prem installation on bare VMs may be a requirements
+	\item The system should adhere to \emph{GitOps} principles (therefore, automation is crucial)
+\end{enumerate}
+
+\subsection{Quasi-formal definitions}
+
+\subsubsection{Quantity of components}
+Let $ N $ denote the complete number of components within the company. As a point of order, $N$ is a finite number and $N \subseteq \mathbb{N}_+$.
+
+\subsubsection{Deployment}
+How single deployment be identified? Would it be sufficient to use \emph{Kubernetes} flavour? Or perhaps a \emph{stage} designation (i.e. test / production)? Maybe used \emph{version} of a component? 
+Unfortunately, none of this ideas fits - due to requirement of having the possibility to modify only a single deployment, one cannot rely on subpart of a deployment to identify it - 
+for example, everything in said environment may be identical except for a single feature flag (therefore, without ability to predict which sub-part will change, it is not possible to pick a part that does not).
+
+Consequently, the rational way of identifying deployment is to have some sort of unique identifier for it - for the time being, \emph{name} is selected as such id - however, it practice it may anything that may serve said function.
+
+\begin{equation}
+	deployment(name): name \rightarrow \{artifact\_package\}
+\end{equation}
+
+Henceforth the following \emph{morphism} (1) will be used to describe means of "materializing" complete deployment for environment with given name. For example: $deployment(test.org.com)$ would materialize complete, declarative deployment of test.org.com environment.
+
+\subsubsection{Components}
+Similarly to $deployment$, the following notation is used for component parts of its deployment:
+
+\begin{enumerate}
+	\item $component_i(name)$ to retrieve appropriate version of component $i$ (service, database..) for given deployment $name$
+	\item $config_i(name)$ to retrieve appropriate version of config for component $i$ (service, database..) for given deployment $name$
+	\item $manifest_i(name)$ to retrieve appropriate version of manifests for component $i$ (service, database..) for given deployment $name$
+	\item $infra(name)$ to retrieve appropriate version of infrastructure definitions (service, database..) for given deployment $name$
+	\item $tooling(name)$ to retrieve appropriate version of tooling (service, database..) to create deployment $name$ with other parts
+\end{enumerate}
+
+Where $i \subseteq N$.
+
+\subsection{Deployment subparts}
+
+The parts which make up a single deployment may be described as follows (2):
+
+\begin{equation}
+	\begin{split}
+		deployment(name) \subseteq \{ \sum_{n=1}^{N} component_n(name), \\
+			\sum_{n=1}^{N} config_n(name), \sum_{n=1}^{N} manifest_n(name), \\
+			infra(name), tooling(name) \}
+	\end{split}
+\end{equation}
+
+\begin{warn}[Notice:]
+  Morphism for component, config, manifests or infra may yield nothing - it indicates that given deployment does not use that particular part.
+\end{warn}
+
+\section{Possible solutions}
+\subsection{Polyrepo \& GitFlow}
+According to polyrepo approach (with a bit of zeal), each component, configurations, manifests, infrastructure and tooling live in its own code repository. 
+\newline\newline
+Let:
+\begin{enumerate}
+	\item $RepoComponent_i$ denote code repository for component $i$
+	\item $RepoConfigs$ denote code repository containing configurations
+	\item $RepoManifests$ denote code repository containing manifests
+	\item $RepoInfra$ denote code repository containing infra definitions
+	\item $RepoTooling$ denote code repository containing tooling for creating full deployment out of sub-parts
+\end{enumerate}
+
+All of aforementioned repositories are structured with GitFlow in mind - each has a 
+separate branch per release version (as well as a development one etc.)
+
+\subsubsection{Fulfing contract}
+
+How to ensure that \emph{morphisms} will connect correct deployment id with appropriate version (that is, how to define what $Component(name)$ does)?
+In the light of all requirements and assumptions - another repository is needed, where such mappings will be stored, named $RepoMappings$. 
+
+What is more, canonical, desired stated of all deployments is required - let it be a $RepoDeployments$ repository, consisting solely out of return values of $deployment(name)$, representing state of all deployments.
+
+How those two repositories should be versioned? There are two possibilities:
+\begin{enumerate}
+	\item Single versioning scheme (branch per version) is applied to both repositories. Current state of deployment is always the one which scheme considers latest and used mapping for given deployment branch is always from corresponding one.
+	\item Without branch per version approach where latest is latest. 
+\end{enumerate}
+
+Are all of requirements fulfilled? Not yet - what is lacking is another  tooling, which automatically takes those mappings, translates them into concrete deployments, tests them and may deploy them ($RepoTopLevelTooling$?).
+Consider what properties that tooling needs to satisfy - it has to be declarative, but what else? It has to be in sync with other two repositories, $RepoMappings$ and $RepoDeployments$, as there always
+has to be version of tooling, capable of running its counterpart version of system state description..
+
+Astute reader will see a problem with that approach - there is not guarantee that the consistency between those three repositories will be maintained. Solution? Well, one can add another tool and be left with same issue.
+Alternatively, it may be assumed that the "top-level" tooling must always be backward compatible for previous versions - meaning, taking latest version of $RepoTopLevelTooling$ it will work for whatever version of $RepoMapping$ and $RepoDeployments$.
+
+Either way, the contract is now fulfilled - as a point of order, we may describe the conditions as:
+
+\begin{equation}
+	\forall v \exists A_v \exists B_v \exists C_v (C_v \circ B_v \rightarrow A_v)
+\end{equation}
+where $v$ is any valid version of any of 3 aforementioned repositories, $A_v$ is $RepoDeployment$ in version $v$,
+$B_v$ is $RepoMapping$ in version $v$, $C_v$ is $RepoTopLevelTooling$ in version $v$ and $\rightarrow$ means producing something.
+
+\subsubsection{Lifecycle}
+What signifies \emph{development tick} within the project? Is it creation a new branch with new version for a single $component_i$?.
+Unfortunately, appearance of new version of a single component means nothing to the system - it would not even be taken into consideration during deployment.
+What signifies "version increment" is a set of changes: at the very least update of mapping (introducing new $component_i$ version to some deployment) and running appropriate tooling to generate new desired state in $RepoDeployments$.
+Consequently, it may be observed that the steering information is contained in the repository triad: $RepoTopLevelTooling$, $RepoMappings$ and $RepoDeployments$ - any new version which appears there, implies a new, overall system version.
+Due to equation (3), there is certainty that those versions are in sync between the repositories.
+
+\subsubsection{Observations and critique}
+\begin{warn}[Notice:]
+	This section has strong opinions belonging to the author.
+\end{warn}
+
+In the authors opinion, the important thing to keep in mind is perspective on how the project is going to be used - what is the singular unit of work it aims to deliver to the customer.
+In the particular case presented in this paper, the organization will not expose the tooling for creation of infrastructure as separate product directly to the customer, nor it will expose tooling that
+binds all deployment parts together as a separate product to customer etc. That is a profound observation - those aforementioned parts, will only bring value to the company when they will work together - 
+what is being sold is effect of all those elements working together (working deployment).
+
+Therefore, there is precious little reason for splitting everything into polyrepo model - dedicated repository for each component, has
+the distinct advantage of giving its subject incredible autonomy - something that should be avoided in presented use-case, as the subject should have none autonomy - they need to fit together with the rest of the system.
+
+Of course, that observation does not mean it is impossible to integrate multiple repositories and make them work in unison - however, that is going against the purpose of the organizational concept and combating the 
+drawbacks that come together with that model. Those drawbacks are:
+
+\begin{enumerate}
+	\item Ensuring consistency and atomicity of changes is harder than it needs to be - as work is split into many repositories with many versions, developer capabilities to verify his change are reduced. 
+	He may run unit tests of a single repository he has done the changes to, but all serious integrations and implications of change made are done outside of his machine - he may only observe how things will 
+	connect in the CI server (alternatively he has to maintain a local set of all repositories, with custom mapping and synchronize the changes to desired state)
+	\item Ensuring consistency and atomicity of changes is harder than it needs to be (II) - CI verification is slow, as there are couple of stages that need to happen before components click together.
+	\item Ensuring consistency and atomicity of changes is harder than it needs to be (III) - writing tests for multiple, independent component is harder than doing so for a single one.
+	\item Ensuring consistency and atomicity of changes is harder than it needs to be (IV) - committing changes to different repositories, than need to happen at the same time is hard to automate well.
+	\item Code sharing / reuse is harder than it needs to be - introduction of any shared resource, means another repository and everything that comes with that. A lot of overhead for a project that does not sell it parts separately.
+	\item Code sharing / reuse is harder than it needs to be (II) - Borrowing code from another "sister" repository can easily lead to dependency cycles and hell (diamond dependency problem)
+	\item Silo-based work - as codebase is spread across many different repositories, it is hard to have a holistic overview of things, hard to find "everything in the project", hard to track dependencies
+	\item Silo-based work (II) - there is no encouragement for the developers to share their work - quite the contrary, it is substantial amount of work to do so, therefore frequently they will duplicate items between repositories 
+	(either consciously or not)
+	\item Silo-based work (III) - any refactoring will be a nightmare, as it will touch multiple repositories
+\end{enumerate}
+
+With the approach suggested in this section the parts making up the whole solution are very well isolated - however, they are isolated without any good reason - bringing great complexity of governing dependencies and building up walls,
+which prevent people not connected with the project from easily joining the development effort (truth be told: those walls will prevent people from contributing between repositories).
+
+To recapitulate: implementing approach described above, will introduce high complexity, lower the readability of system state, testing and systematically discourage cooperation between different teams. Not something that will "bind together"
+everyone to deliver single unit of work to the customer. 
+
+
+\subsection{Monorepo \& Trunk-based}
+To be described - but overall polar opposite of previous section.
+
+\section{Materials}
+\begin{enumerate}
+	\item Trunk based development - https://trunkbaseddevelopment.com/monorepos/
+	\item GitFlow - https://nvie.com/posts/a-successful-git-branching-model/
+	\item Monorepos: Pros and Cons - https://fossa.com/blog/pros-cons-using-monorepos/
+	\item Monorepos: Please don't - https://medium.com/@mattklein123/monorepos-please-dont-e9a279be011b
+	\item Monorepos and fallacy of scale - https://presumably.de/monorepos-and-the-fallacy-of-scale.html
+\end{enumerate}
+
+\end{document}
