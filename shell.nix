@@ -17,6 +17,9 @@ pkgs.mkShell {
     bazel
     bazel-buildtools
     cacert
+    dhall
+    dhall-json
+    dhall-lsp-server
     docker
     gitFull
     graphviz
